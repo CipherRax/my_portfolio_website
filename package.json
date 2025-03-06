@@ -12,6 +12,7 @@
     "@react-three/drei": "^10.0.1",
     "@react-three/fiber": "^9.0.4",
     "clsx": "^2.1.1",
+    "core-js": "^3.40.0",
     "framer-motion": "^12.4.7",
     "mini-svg-data-uri": "^1.4.4",
     "next": "15.1.7",
