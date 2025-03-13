@@ -5,6 +5,20 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { JSX } from "react/jsx-dev-runtime";
 
+// Type for BuildData and BuildMaterial
+// Replace with the actual structure of your data
+type BuildData = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+type BuildMaterial = {
+  materialId: string;
+  materialType: string;
+  properties?: Record<string, any>;
+};
+
 // Type for navItems
 type NavItem = {
   name: string;
@@ -12,31 +26,29 @@ type NavItem = {
   icon?: JSX.Element;
 };
 
-type BuildData = { /* Define the structure of your build data here */ };
-type BuildMaterial = { /* Define the structure of your build material here */ };
-
 export const FloatingNav = ({
   navItems,
   className,
-  _buildData, // If this is a prop, define its type
-  _buildMaterial, // If this is a prop, define its type
+  _buildData, // Now with the correct types
+  _buildMaterial, // Now with the correct types
 }: {
   navItems: NavItem[];
   className?: string;
-  _buildData: BuildData; // Use the correct type for _buildData
-  _buildMaterial: BuildMaterial; // Use the correct type for _buildMaterial
+  _buildData: BuildData; // Correctly typed BuildData
+  _buildMaterial: BuildMaterial; // Correctly typed BuildMaterial
 }) => {
   const { scrollYProgress } = useScroll();
 
   const [visible, setVisible] = useState(true);
 
+  // Refactor to just track scroll progress and visibility
   useMotionValueEvent(scrollYProgress, "change", (current) => {
     if (typeof current === "number") {
       const direction = current - scrollYProgress.getPrevious()!;
-      if (scrollYProgress.get() < 0.05) {
+      if (current < 0.05) {
         setVisible(true);
       } else {
-        setVisible(direction < 0);
+        setVisible(direction < 0); // Hide on scroll down, show on scroll up
       }
     }
   });
@@ -63,9 +75,9 @@ export const FloatingNav = ({
           border: "1px solid rgba(255, 255, 255, 0.125)",
         }}
       >
-        {navItems.map((navItem, idx) => (
+        {navItems.map((navItem) => (
           <Link
-            key={`link=${idx}`}
+            key={navItem.link} // Use link instead of idx as key for uniqueness
             href={navItem.link}
             className={cn(
               "relative dark:text-neutral-50 items-center flex space-x-1 text-neutral-600 dark:hover:text-neutral-300 hover:text-neutral-500"

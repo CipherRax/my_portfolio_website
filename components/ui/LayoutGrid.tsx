@@ -1,9 +1,11 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+
+import React, { useState } from "react"; // Removed useRef and useEffect from import
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Button } from "./MovingBorders";
+import { JSX } from "react/jsx-dev-runtime";
 
 type Card = {
   id: number;

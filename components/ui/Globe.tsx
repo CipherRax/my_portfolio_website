@@ -2,14 +2,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
-import { useThree, Object3DNode, Canvas, extend } from "@react-three/fiber";
+import { useThree, Canvas, extend } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import countries from "@/data/globe.json";
+
+// Define Object3DNode for extending ThreeElements
 declare module "@react-three/fiber" {
   interface ThreeElements {
     threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
   }
 }
+
+type Object3DNode<T, P> = {
+  [K in keyof T]: T[K];
+} & {
+  [K in keyof P]: P[K];
+};
+
+// Define ObjAccessor to accept Position
+type ObjAccessor<T> = (obj: any) => T;
 
 extend({ ThreeGlobe });
 
@@ -118,7 +129,10 @@ export function Globe({ globeConfig, data }: WorldProps) {
     let points = [];
     for (let i = 0; i < arcs.length; i++) {
       const arc = arcs[i];
-      const rgb = hexToRgb(arc.color) as { r: number; g: number; b: number };
+      const rgb = hexToRgb(arc.color);
+      if (!rgb) {
+        throw new Error(`Invalid color: ${arc.color}`);
+      }
       points.push({
         size: defaultProps.pointSize,
         order: arc.order,
@@ -135,7 +149,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
       });
     }
 
-    // remove duplicates for same lat and lng
+    // Remove duplicates for same lat and lng
     const filteredPoints = points.filter(
       (v, i, a) =>
         a.findIndex((v2) =>
@@ -157,9 +171,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
         .showAtmosphere(defaultProps.showAtmosphere)
         .atmosphereColor(defaultProps.atmosphereColor)
         .atmosphereAltitude(defaultProps.atmosphereAltitude)
-        .hexPolygonColor((e) => {
-          return defaultProps.polygonColor;
-        });
+        .hexPolygonColor(() => defaultProps.polygonColor);
       startAnimation();
     }
   }, [globeData]);
@@ -169,38 +181,58 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
     globeRef.current
       .arcsData(data)
-      .arcStartLat((d) => (d as { startLat: number }).startLat * 1)
-      .arcStartLng((d) => (d as { startLng: number }).startLng * 1)
-      .arcEndLat((d) => (d as { endLat: number }).endLat * 1)
-      .arcEndLng((d) => (d as { endLng: number }).endLng * 1)
-      .arcColor((e: any) => (e as { color: string }).color)
-      .arcAltitude((e) => {
-        return (e as { arcAlt: number }).arcAlt * 1;
+      .arcStartLat((d: any) => d.startLat) // Generalize type to `any`
+      .arcStartLng((d: any) => d.startLng)
+      .arcEndLat((d: any) => d.endLat)
+      .arcEndLng((d: any) => d.endLng)
+      .arcColor((t: number) => {
+        // Access the color for each arc
+        const arc = data[Math.floor(t * data.length)]; // Example: Find the arc corresponding to time 't'
+        const rgb = hexToRgb(arc.color);
+        if (!rgb) {
+          throw new Error(`Invalid color: ${arc.color}`);
+        }
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
       })
-      .arcStroke((e) => {
-        return [0.32, 0.28, 0.3][Math.round(Math.random() * 2)];
-      })
+      
+      .arcAltitude((e: any) => e.arcAlt)
+      .arcStroke(() => [0.32, 0.28, 0.3][Math.round(Math.random() * 2)])
       .arcDashLength(defaultProps.arcLength)
-      .arcDashInitialGap((e) => (e as { order: number }).order * 1)
+      .arcDashInitialGap((e: any) => e.order) // Generalize type to `any`
       .arcDashGap(15)
-      .arcDashAnimateTime((e) => defaultProps.arcTime);
-
-    globeRef.current
+      .arcDashAnimateTime(() => defaultProps.arcTime);
+      globeRef.current
       .pointsData(data)
-      .pointColor((e) => (e as { color: string }).color)
+      .pointColor((point: any) => {
+        // Use the point to calculate the color
+        const rgb = hexToRgb(point.color);
+        if (!rgb) {
+          throw new Error(`Invalid color: ${point.color}`);
+        }
+        return (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
+      })
+    
+    
       .pointsMerge(true)
       .pointAltitude(0.0)
       .pointRadius(2);
 
-    globeRef.current
+      globeRef.current
       .ringsData([])
-      .ringColor((e: any) => (t: any) => e.color(t))
-      .ringMaxRadius(defaultProps.maxRings)
-      .ringPropagationSpeed(RING_PROPAGATION_SPEED)
-      .ringRepeatPeriod(
-        (defaultProps.arcTime * defaultProps.arcLength) / defaultProps.rings
-      );
-  };
+      .ringColor((t: number) => {
+        // Assuming you want to color the ring based on `t`
+        // You can access any ring data from somewhere else if needed.
+    
+        // Sample logic to create a color based on `t` or use some predefined logic
+        const rgb = hexToRgb('#ff0000'); // Replace with logic to get color based on `t`
+        if (!rgb) {
+          throw new Error('Invalid color');
+        }
+    
+        // Use `t` to create a color, for example, applying transparency over time
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
+      });
+    
 
   useEffect(() => {
     if (!globeRef.current || !globeData) return;

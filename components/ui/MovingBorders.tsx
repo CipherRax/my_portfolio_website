@@ -22,17 +22,15 @@ export function Button({
 }: {
   borderRadius?: string;
   children: React.ReactNode;
-  as?: any;
+  as?: React.ElementType;
   containerClassName?: string;
   borderClassName?: string;
   duration?: number;
   className?: string;
-  [key: string]: any;
-}) {
+} & React.HTMLAttributes<HTMLElement>) {
   return (
     <Component
       className={cn(
-        // remove h-16 w-40, add  md:col-span-2
         "bg-transparent relative text-xl p-[1px] overflow-hidden md:col-span-2 md:row-span-1",
         containerClassName
       )}
@@ -81,9 +79,8 @@ export const MovingBorder = ({
   duration?: number;
   rx?: string;
   ry?: string;
-  [key: string]: any;
-}) => {
-  const pathRef = useRef<any>();
+} & React.SVGAttributes<SVGElement>) => {
+  const pathRef = useRef<SVGRectElement>(null);
   const progress = useMotionValue<number>(0);
 
   useAnimationFrame((time) => {
@@ -96,11 +93,11 @@ export const MovingBorder = ({
 
   const x = useTransform(
     progress,
-    (val) => pathRef.current?.getPointAtLength(val).x
+    (val) => pathRef.current?.getPointAtLength(val).x || 0
   );
   const y = useTransform(
     progress,
-    (val) => pathRef.current?.getPointAtLength(val).y
+    (val) => pathRef.current?.getPointAtLength(val).y || 0
   );
 
   const transform = useMotionTemplate`translateX(${x}px) translateY(${y}px) translateX(-50%) translateY(-50%)`;
