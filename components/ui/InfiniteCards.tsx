@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import React, { useEffect, useState } from "react";
-import Image from 'next/image'; // Import the next/image component
+import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image"; // Import the next/image component
 
 export const InfiniteMovingCards = ({
   items,
@@ -23,58 +23,49 @@ export const InfiniteMovingCards = ({
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const scrollerRef = React.useRef<HTMLUListElement>(null);
-
-  // Added addAnimation as a dependency to useEffect
-  useEffect(() => {
-    addAnimation();
-  }, [addAnimation]); // Ensure addAnimation is included in the dependency array
-
   const [start, setStart] = useState(false);
 
-  function addAnimation() {
+  const getDirection = useCallback(() => {
+    if (containerRef.current) {
+      containerRef.current.style.setProperty(
+        "--animation-direction",
+        direction === "left" ? "forwards" : "reverse"
+      );
+    }
+  }, [direction]);
+
+  const getSpeed = useCallback(() => {
+    if (containerRef.current) {
+      const speedMap: Record<string, string> = {
+        fast: "20s",
+        normal: "40s",
+        slow: "80s",
+      };
+      containerRef.current.style.setProperty(
+        "--animation-duration",
+        speedMap[speed] || "40s"
+      );
+    }
+  }, [speed]);
+
+  const addAnimation = useCallback(() => {
     if (containerRef.current && scrollerRef.current) {
       const scrollerContent = Array.from(scrollerRef.current.children);
 
       scrollerContent.forEach((item) => {
         const duplicatedItem = item.cloneNode(true);
-        if (scrollerRef.current) {
-          scrollerRef.current.appendChild(duplicatedItem);
-        }
+        scrollerRef.current?.appendChild(duplicatedItem);
       });
 
       getDirection();
       getSpeed();
       setStart(true);
     }
-  }
+  }, [getDirection, getSpeed]);
 
-  const getDirection = () => {
-    if (containerRef.current) {
-      if (direction === "left") {
-        containerRef.current.style.setProperty(
-          "--animation-direction",
-          "forwards"
-        );
-      } else {
-        containerRef.current.style.setProperty(
-          "--animation-direction",
-          "reverse"
-        );
-      }
-    }
-  };
-
-  const getSpeed = () => {
-    if (containerRef.current) {
-      if (speed === "fast") {
-        containerRef.current.style.setProperty("--animation-duration", "20s");
-      } else if (speed === "normal") {
-        containerRef.current.style.setProperty("--animation-duration", "40s");
-      } else {
-        containerRef.current.style.setProperty("--animation-duration", "80s");
-      }
-    }
-  };
+  useEffect(() => {
+    addAnimation();
+  }, [addAnimation]);
 
   return (
     <div
@@ -87,8 +78,8 @@ export const InfiniteMovingCards = ({
       <ul
         ref={scrollerRef}
         className={cn(
-          " flex min-w-full shrink-0 gap-16 py-4 w-max flex-nowrap",
-          start && "animate-scroll ",
+          "flex min-w-full shrink-0 gap-16 py-4 w-max flex-nowrap",
+          start && "animate-scroll",
           pauseOnHover && "hover:[animation-play-state:paused]"
         )}
       >
@@ -108,17 +99,17 @@ export const InfiniteMovingCards = ({
                 aria-hidden="true"
                 className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"
               ></div>
-              <span className=" relative z-20 text-sm md:text-lg leading-[1.6] text-white font-normal">
+              <span className="relative z-20 text-sm md:text-lg leading-[1.6] text-white font-normal">
                 {item.quote}
               </span>
               <div className="relative z-20 mt-6 flex flex-row items-center">
                 <div className="me-3">
                   {/* Using next/image for image optimization */}
-                  <Image 
-                    src="/profile.svg" 
-                    alt="profile" 
-                    width={100} 
-                    height={100} 
+                  <Image
+                    src="/profile.svg"
+                    alt="profile"
+                    width={100}
+                    height={100}
                     quality={75} // Optional: control image quality
                   />
                 </div>
@@ -126,7 +117,7 @@ export const InfiniteMovingCards = ({
                   <span className="text-xl font-bold leading-[1.6] text-white">
                     {item.name}
                   </span>
-                  <span className=" text-sm leading-[1.6] text-white-200 font-normal">
+                  <span className="text-sm leading-[1.6] text-white-200 font-normal">
                     {item.title}
                   </span>
                 </span>

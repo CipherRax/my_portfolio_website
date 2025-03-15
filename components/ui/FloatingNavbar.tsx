@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
@@ -16,7 +17,7 @@ type BuildData = {
 type BuildMaterial = {
   materialId: string;
   materialType: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>; // Change `any` to `unknown` or another more specific type
 };
 
 // Type for navItems

@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 
+// Main CanvasRevealEffect component
 export const CanvasRevealEffect = ({
   animationSpeed = 0.4,
   opacities = [0.3, 0.3, 0.3, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8, 1],
@@ -42,6 +43,7 @@ export const CanvasRevealEffect = ({
   );
 };
 
+// DotMatrixProps interface with refined types
 interface DotMatrixProps {
   colors?: [number, number, number][]; // Ensure colors are 3-element tuples
   opacities?: number[];
@@ -50,6 +52,7 @@ interface DotMatrixProps {
   shader?: string;
 }
 
+// DotMatrix component
 const DotMatrix: React.FC<DotMatrixProps> = ({
   colors = [[0, 0, 0]],
   opacities = [0.04, 0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.14],
@@ -64,7 +67,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
       colorsArray = new Array(6).fill(colors[0] as [number, number, number]);
     } else if (colors.length === 2) {
       colorsArray = [
-        colors[0] ?? [0, 0, 0], // Ensure each color is a 3-element array
+        colors[0] ?? [0, 0, 0],
         colors[0] ?? [0, 0, 0],
         colors[0] ?? [0, 0, 0],
         colors[1] ?? [0, 0, 0],
@@ -103,18 +106,21 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
   return <Shader source={shader} uniforms={uniforms} maxFps={60} />;
 };
 
+// Refined Uniforms type for more specificity
 type Uniforms = {
   [key: string]: {
-    value: number | number[] | number[][];
+    value: number | number[] | THREE.Vector3[] | THREE.Vector3;
   };
 };
 
+// ShaderProps interface
 interface ShaderProps {
   source: string;
   uniforms: Uniforms;
   maxFps?: number;
 }
 
+// ShaderMaterial component
 const ShaderMaterial = ({
   source,
   uniforms,
@@ -154,7 +160,7 @@ const ShaderMaterial = ({
                 new THREE.Vector3().fromArray(v)
               ),
             };
-          } else {
+          } else if (uniform.value instanceof Array) {
             preparedUniforms[uniformName] = {
               value: new THREE.Vector3().fromArray(uniform.value as number[]),
             };
@@ -205,6 +211,7 @@ const ShaderMaterial = ({
   );
 };
 
+// Shader component
 const Shader: React.FC<ShaderProps> = ({ source, uniforms, maxFps = 60 }) => {
   return (
     <Canvas className="absolute inset-0 h-full w-full">
