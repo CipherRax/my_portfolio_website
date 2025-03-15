@@ -64,42 +64,27 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
     let colorsArray: [number, number, number][] = new Array(6).fill([0, 0, 0]);
 
     if (colors.length === 1) {
-      colorsArray = new Array(6).fill(colors[0] as [number, number, number]);
+      colorsArray = new Array(6).fill(colors[0]);
     } else if (colors.length === 2) {
       colorsArray = [
-        colors[0] ?? [0, 0, 0],
-        colors[0] ?? [0, 0, 0],
-        colors[0] ?? [0, 0, 0],
-        colors[1] ?? [0, 0, 0],
-        colors[1] ?? [0, 0, 0],
-        colors[1] ?? [0, 0, 0],
+        colors[0], colors[0], colors[0],
+        colors[1], colors[1], colors[1]
       ];
     } else if (colors.length === 3) {
       colorsArray = [
-        colors[0] ?? [0, 0, 0],
-        colors[0] ?? [0, 0, 0],
-        colors[1] ?? [0, 0, 0],
-        colors[1] ?? [0, 0, 0],
-        colors[2] ?? [0, 0, 0],
-        colors[2] ?? [0, 0, 0],
+        colors[0], colors[0],
+        colors[1], colors[1],
+        colors[2], colors[2]
       ];
     }
 
     return {
       u_colors: {
-        value: colorsArray.map((color) =>
-          color.map((c: number) => c / 255)
-        ),
+        value: colorsArray.map((color) => new THREE.Vector3().fromArray(color)),
       },
-      u_opacities: {
-        value: opacities,
-      },
-      u_total_size: {
-        value: totalSize,
-      },
-      u_dot_size: {
-        value: dotSize,
-      },
+      u_opacities: { value: new Float32Array(opacities) },
+      u_total_size: { value: totalSize },
+      u_dot_size: { value: dotSize },
     };
   }, [colors, opacities, totalSize, dotSize]);
 
@@ -109,7 +94,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
 // Refined Uniforms type for more specificity
 type Uniforms = {
   [key: string]: {
-    value: number | number[] | THREE.Vector3[] | THREE.Vector3;
+    value: number | number[] | Float32Array | THREE.Vector2 | THREE.Vector3 | THREE.Vector3[];
   };
 };
 
@@ -121,15 +106,7 @@ interface ShaderProps {
 }
 
 // ShaderMaterial component
-const ShaderMaterial = ({
-  source,
-  uniforms,
-  maxFps = 60,
-}: {
-  source: string;
-  maxFps?: number;
-  uniforms: Uniforms;
-}) => {
+const ShaderMaterial = ({ source, uniforms, maxFps = 60 }: ShaderProps) => {
   const { size } = useThree();
   const ref = useRef<THREE.Mesh>(null);
 
@@ -146,29 +123,10 @@ const ShaderMaterial = ({
   });
 
   const getUniforms = useMemo(() => {
-    const preparedUniforms: { [key: string]: THREE.IUniform<any> } = {};
+    const preparedUniforms: Uniforms = {};
 
     for (const [uniformName, uniform] of Object.entries(uniforms)) {
-      switch (typeof uniform.value) {
-        case "number":
-          preparedUniforms[uniformName] = { value: uniform.value };
-          break;
-        case "object":
-          if (Array.isArray(uniform.value[0])) {
-            preparedUniforms[uniformName] = {
-              value: (uniform.value as number[][]).map((v) =>
-                new THREE.Vector3().fromArray(v)
-              ),
-            };
-          } else if (uniform.value instanceof Array) {
-            preparedUniforms[uniformName] = {
-              value: new THREE.Vector3().fromArray(uniform.value as number[]),
-            };
-          }
-          break;
-        default:
-          console.error(`Invalid uniform type for '${uniformName}'.`);
-      }
+      preparedUniforms[uniformName] = { value: uniform.value };
     }
 
     preparedUniforms["u_time"] = { value: 0 };
@@ -179,34 +137,10 @@ const ShaderMaterial = ({
     return preparedUniforms;
   }, [uniforms, size.width, size.height]);
 
-  const material = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      vertexShader: `
-      precision mediump float;
-      in vec2 coordinates;
-      uniform vec2 u_resolution;
-      out vec2 fragCoord;
-      void main(){
-        float x = position.x;
-        float y = position.y;
-        gl_Position = vec4(x, y, 0.0, 1.0);
-        fragCoord = (position.xy + vec2(1.0)) * 0.5 * u_resolution;
-        fragCoord.y = u_resolution.y - fragCoord.y;
-      }
-      `,
-      fragmentShader: source,
-      uniforms: getUniforms,
-      glslVersion: THREE.GLSL3,
-      blending: THREE.CustomBlending,
-      blendSrc: THREE.SrcAlphaFactor,
-      blendDst: THREE.OneFactor,
-    });
-  }, [getUniforms, source]);
-
   return (
     <mesh ref={ref}>
       <planeGeometry args={[2, 2]} />
-      <primitive object={material} attach="material" />
+      <primitive object={new THREE.ShaderMaterial({ vertexShader: "", fragmentShader: source, uniforms: getUniforms })} attach="material" />
     </mesh>
   );
 };
